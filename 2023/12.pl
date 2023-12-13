@@ -3,7 +3,7 @@ use feature qw(signatures);
 no warnings qw(experimental::signatures);
 use Data::Dump qw(dump);
 
-sub foo($fn) {
+sub foo($fn, $exp) {
     open(my $fh, "<$fn");
     print "(\n";
     while(<$fh>) {
@@ -24,6 +24,8 @@ sub foo($fn) {
 }
 
 print "(defparameter input '(\n";
-foo("12-ex.txt");
-foo("12-input.txt");
+foo("12-ex.txt", 0);
+foo("12b-ex.txt", 1);
+foo("12-input.txt", 0);
+foo("12b-input.txt", 1);
 print "))\n";

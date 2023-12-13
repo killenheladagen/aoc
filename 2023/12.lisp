@@ -1041,6 +1041,10 @@
     ;;(format t "~%testing: ~a: ~a" x res)
     res))
 
+(defun times5 (x)
+  (append (list (append (car x) '(nil) (car x) '(nil) (car x) '(nil) (car x) '(nil) (car x)))
+	  (cdr x) (cdr x)  (cdr x)  (cdr x)  (cdr x)))
+
 (defun num-combos (x)
   ;;(print x)
   (let* (;;(total-ones (reduce #'+ (cdr x)))
@@ -1060,5 +1064,5 @@
 			  '(0 1)))))))
 (defun main ()
   (mapcar (lambda (inp)
-	    (reduce #'+ (mapcar #'num-combos inp)))
+	    (reduce #'+ (mapcar #'num-combos (mapcar #'times5 inp))))
 	  input))
