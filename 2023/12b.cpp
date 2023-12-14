@@ -73,50 +73,47 @@ bool prev_cand(string &pat) {
 }
 #endif
 
-int64_t num_combos(string pat, vector<int> const &m, int x) {
-    // cerr << "\n"
-    //        << pat0 << " " << pat0 << " " << pat0 << " " << pat0 << " " <<
-    //        pat0;
-
+int64_t num_combos(string pat, vector<int> const &m, int x = 0,
+                   bool verbose = false) {
     if (x == 1) {
         auto patx = pat + "?" + pat;
         vector<int> mx(m.size() * 2);
         for (int i = 0; i < mx.size(); i++)
             mx[i] = m[i % m.size()];
-        return num_combos(patx, mx, 0);
+        return num_combos(patx, mx, 0, verbose);
     } else if (x == 4) {
-        auto a = num_combos(pat, m, 0);
-        auto b = num_combos(pat, m, 1);
+        auto a = num_combos(pat, m, 0, verbose);
+        auto b = num_combos(pat, m, 1, verbose);
         auto c = a * (int(round(pow(b / a, 4))));
         cerr << "\n f(" << a << ", " << b << ") => " << c;
         return c;
     }
 
-    cerr << "\n" << pat << " [";
-    for (auto e : m)
-        cerr << " " << e;
-    cerr << "]";
-
-    int64_t res = 0;
-    string first_valid;
-    while (next_cand(pat)) {
-        auto s = test_validity(pat, m);
-        // cerr << "\n   " << pat << " => " << s;
-        if (s == VALID) {
-            if (first_valid.empty())
-                first_valid = pat;
-            res++;
-        }
+    if (verbose) {
+        cerr << "\n" << pat << " [";
+        for (auto e : m)
+            cerr << " " << e;
+        cerr << "]";
     }
-    cerr << " => " << res;
-    cerr << " (" << first_valid << ")";
-    return res;
+
+    auto num_q = count(pat.begin(), pat.end(), '?');
+    if (num_q == 0)
+        return (test_validity(pat, m) == VALID) ? 1 : 0;
+
+    auto p = &pat[0];
+    while (*p != '?')
+        p++;
+    *p = '0';
+    auto r0 = num_combos(pat, m);
+    *p = '1';
+    auto r1 = num_combos(pat, m);
+    return r0 + r1;
 }
 
 int main() {
     int64_t sum = 0;
     for (auto const &e : input)
-        sum += num_combos(get<0>(e), get<1>(e), 4);
+        sum += num_combos(get<0>(e), get<1>(e), 4, true);
     cerr << "\n\n" << sum << "\n";
     return 0;
 };
