@@ -1,4 +1,4 @@
 all: 12b.cpp
-	g++ -O2 $<
+	g++ -O3 $<
 	clang-format -i $<
 	./a.out
