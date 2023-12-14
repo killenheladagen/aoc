@@ -1041,9 +1041,12 @@
     ;;(format t "~%testing: ~a: ~a" x res)
     res))
 
-(defun times5 (x)
-  (append (list (append (car x) '(nil) (car x) '(nil) (car x) '(nil) (car x) '(nil) (car x)))
-	  (cdr x) (cdr x)  (cdr x)  (cdr x)  (cdr x)))
+(defun expand (x)
+  (append (list (append (car x) '(nil) (car x)))
+	  (cdr x) (cdr x)))
+
+(defun expand-n (x n)
+  (if (zerop n) x (expand (expand-n x (1- n)))))
 
 (defun num-combos (x)
   ;;(print x)
@@ -1062,7 +1065,13 @@
 			    (setf (elt cand-list np) rep)
 			    (num-combos (append (list cand-list) (cdr x))))
 			  '(0 1)))))))
-(defun main ()
-  (mapcar (lambda (inp)
-	    (reduce #'+ (mapcar #'num-combos (mapcar #'times5 inp))))
-	  input))
+
+(defun main (inp)
+  (reduce #'+
+	  (mapcar (lambda (x)
+		    (let* ((a (num-combos x))
+			   (b (num-combos (expand x)))
+			   (c (* a (expt (/ b a) 4))))
+		      (print (list a b c))
+		      c))
+		  inp)))
