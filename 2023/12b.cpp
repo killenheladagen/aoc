@@ -116,7 +116,7 @@ optional<int64_t> num_combos_or_cache(string const &pat, vector<int> const &m) {
     string s = pat;
     auto fut =
         async(launch::async, [&]() { return num_combos(&s[0], m, kill); });
-    switch (auto status = fut.wait_for(1min); status) {
+    switch (auto status = fut.wait_for(20s); status) {
     case future_status::ready: {
         auto res = fut.get();
         cache[k] = res;
@@ -178,7 +178,7 @@ void main2() {
 }
 
 int main() {
-    auto const max_run_time = 20min;
+    auto const max_run_time = 24h;
 
     atomic_bool done{false};
     thread t([&]() {
