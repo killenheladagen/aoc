@@ -42,3 +42,9 @@ inline auto &operator<<(std::ostream &os, std::vector<int> const &v) {
     os << "]";
     return os;
 }
+
+inline auto reverse(std::string s) {
+    for (int i = 0; i <= (s.size() / 2); i++)
+        std::swap(s[i], s[s.size() - i - 1]);
+    return s;
+}
