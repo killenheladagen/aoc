@@ -34,6 +34,13 @@ struct point {
     }
 };
 
+std::optional<point> step(point pos, char dir, point dim) {
+    pos += dir;
+    if (pos.x < 0 || pos.y < 0 || pos.x >= dim.x || pos.y >= dim.x)
+        return std::nullopt;
+    return pos;
+}
+
 auto straight_trajectory(point a, point b) {
     using namespace std;
     if (a.x == b.x)
@@ -99,4 +106,8 @@ void draw_map(std::vector<std::string> const &w) {
     cerr << "\n";
     for (auto &row : w)
         cerr << row << "\n";
+}
+
+auto map_dimensions(std::vector<std::string> const &w) {
+    return point(w[0].size(), w.size());
 }
