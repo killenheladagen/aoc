@@ -73,6 +73,19 @@ auto &operator<<(std::ostream &os, std::vector<point> const &v) {
     return os;
 }
 
+auto &operator<<(std::ostream &os, std::set<point> const &v) {
+    os << "[";
+    bool add_sep = false;
+    for (auto const e : v) {
+        if (add_sep)
+            os << ",";
+        add_sep = true;
+        os << e;
+    }
+    os << "]";
+    return os;
+}
+
 bool operator==(point a, point b) { return a.x == b.x && a.y == b.y; }
 
 bool operator!=(point a, point b) { return !(a == b); }

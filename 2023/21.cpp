@@ -88,17 +88,24 @@ struct infinite_map {
     }
 };
 
+bool operator<(point const &a, point const &b) {
+    return (a.y == b.y) ? a.x < b.x : a.y < b.y;
+}
+
 void foo(bool verbose, int i, vector<int64_t> const &expected) {
     auto world = read_file_as_string_vector("21-"s + to_string(i) + ".txt");
     auto const dim = map_dimensions(world);
 
-    auto cur = find_in_map(world, 'S');
-    Expects(cur.size() == 1);
-    char_at(world, cur[0]) = '.';
-    if (verbose && i == 0)
-        draw_map(world);
+    auto cur = [&]() {
+        auto cur = find_in_map(world, 'S');
+        Expects(cur.size() == 1);
+        char_at(world, cur[0]) = '.';
+        if (verbose && i == 0)
+            draw_map(world);
+        return set<point>(cur.begin(), cur.end());
+    }();
 
-    vector<point> next_pos;
+    set<point> next_pos;
     auto num_steps = 0LL;
 
     auto exp_it = expected.begin();
@@ -108,15 +115,14 @@ void foo(bool verbose, int i, vector<int64_t> const &expected) {
         for (auto const &pos : cur)
             for (auto dir : "v^<>"s) {
                 auto dest_pos = pos + dir;
-                if (char_at_infinite(world, dest_pos, dim) == '.' &&
-                    find(next_pos.begin(), next_pos.end(), dest_pos) ==
-                        next_pos.end())
-                    next_pos.push_back(dest_pos);
+                if (char_at_infinite(world, dest_pos, dim) == '.')
+                    next_pos.insert(dest_pos);
             }
         cur = move(next_pos);
         if (verbose) {
-            cerr << "\n"
-                 << DUMP(num_steps) << DUMP(cur.size()); // << DUMP(cur);
+            cerr << "\n" << DUMP(i) << DUMP(num_steps) << DUMP(cur.size());
+            if (cur.size() < 20)
+                cerr << DUMP(cur);
 #if 0
             auto scratch_map = infinite_map(world);
             for (auto p : cur)
@@ -147,6 +153,6 @@ int main() {
     foo(true, 0,
         {6LL, 16LL, 10LL, 50LL, 50LL, 1594LL, 100LL, 6536LL, 500LL, 167004LL,
          1000LL, 668697LL, 5000LL, 16733044LL});
-    foo(false, 1, {64LL, 3591LL, 26501365LL, 0LL});
+    foo(!false, 1, {64LL, 3591LL, 26501365LL, 0LL});
     return 0;
 }
