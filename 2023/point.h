@@ -8,6 +8,11 @@ struct point {
     point(int64_t x, int64_t y) : x(x), y(y) {}
     point() : point(-1, -1) {}
 
+    auto &operator+=(point const b) {
+        x += b.x;
+        y += b.y;
+        return *this;
+    }
     auto &operator+=(char dir) {
         using namespace std;
         switch (dir) {

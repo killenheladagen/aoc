@@ -17,6 +17,15 @@
 
 #define DUMP(VAR) " " << #VAR << "=" << VAR
 
+namespace pretty {
+#if 0
+#else
+std::string list_head("{");
+std::string list_tail("}");
+std::string item_sep(",");
+#endif
+} // namespace pretty
+
 inline auto list_car(auto v) {
     v.resize(1);
     return v;
@@ -45,13 +54,13 @@ inline auto &operator<<(std::ostream &os, std::vector<int> const &v) {
 }
 
 inline auto &operator<<(std::ostream &os, std::vector<int64_t> const &v) {
-    os << "[";
+    os << pretty::list_head;
     for (int64_t i = 0; i < v.size(); i++) {
         if (i > 0)
-            os << ",";
+            os << pretty::item_sep;
         os << v[i];
     }
-    os << "]";
+    os << pretty::list_tail;
     return os;
 }
 
@@ -100,3 +109,5 @@ inline auto unique_sorted(std::vector<int64_t> v) {
     v.erase(last, v.end());
     return v;
 }
+
+inline int modulo(int64_t k, int64_t n) { return (n + (k % n)) % n; }
