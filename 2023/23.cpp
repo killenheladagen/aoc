@@ -9,35 +9,45 @@ void show_path_on_map(vector<string> world, vector<point> const &path) {
     draw_map(world);
 }
 
-auto next_steps(vector<string> const &world, vector<point> const &path) {
+auto next_steps(vector<string> const &world, vector<point> const &path,
+                bool slippery) {
     vector<point> steps;
     for (auto dir : "^>v<"s) {
         auto p = path.back() + dir;
         if (p.x >= 0 && p.y >= 0 &&
-            (char_at(world, p) == '.' || char_at(world, p) == dir))
+            ((slippery &&
+              (char_at(world, p) == '.' || char_at(world, p) == dir)) ||
+             (!slippery && char_at(world, p) != '#')))
             if (find(path.begin(), path.end(), p) == path.end())
                 steps.push_back(p);
     }
     return steps;
 }
 
-vector<vector<point>> all_paths(vector<string> const &world, point const &start,
-                                point const &finish) {
+vector<vector<point>> longest_paths(vector<string> const &world,
+                                    point const &start, point const &finish,
+                                    bool slippery) {
     vector<vector<point>> finished;
     deque<vector<point>> wip;
     wip.push_back(vector<point>{start});
+    int attempts = 0;
     while (!wip.empty()) {
         if (wip.front().back() == finish) {
-            cerr << "\nFinished: #" << (finished.size() + 1) << " "
-                 << wip.front();
-            finished.push_back(wip.front());
+            attempts++;
+            cerr << "\nFinished for #" << attempts << ": " << wip.front();
+            if (finished.empty() ||
+                (finished.front().size() < wip.front().size())) {
+                finished.clear();
+                finished.push_back(wip.front());
+                cerr << "\n Best so far: " << wip.front().size() - 1;
+            }
             wip.pop_front();
         } else {
-            auto n = next_steps(world, wip.front());
+            auto n = next_steps(world, wip.front(), slippery);
             switch (n.size()) {
             case 0: // Dead end
-                cerr << "\nDead end: " << wip.front();
-                show_path_on_map(world, wip.front());
+                attempts++;
+                cerr << "\nDead end for #" << attempts << ": " << wip.front();
                 wip.pop_front();
                 break;
             default: // Fork path
@@ -55,7 +65,7 @@ vector<vector<point>> all_paths(vector<string> const &world, point const &start,
     return finished;
 }
 
-void foo(bool verbose, vector<int> const &expected) {
+void foo(bool verbose, bool slippery, vector<int> const &expected) {
     auto exp_it = expected.begin();
 
     for (int i = 0; i < 2; i++) {
@@ -70,7 +80,7 @@ void foo(bool verbose, vector<int> const &expected) {
             draw_map(world);
 
         vector<point> path;
-        for (auto e : all_paths(world, start, finish))
+        for (auto e : longest_paths(world, start, finish, slippery))
             if (e.size() > path.size())
                 path = e;
 
@@ -87,6 +97,7 @@ void foo(bool verbose, vector<int> const &expected) {
 }
 
 int main() {
-    foo(true, {94});
+    // foo(true, true, {94, 2182});
+    foo(true, false, {154});
     return 0;
 }
