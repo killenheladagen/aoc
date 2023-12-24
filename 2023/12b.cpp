@@ -10,19 +10,6 @@ auto input = vector<vector<tuple<string, vector<int>>>>{{
 #include "12-input.cpp"
                                                         }};
 
-auto split(string s, char sep) {
-    vector<string> res;
-    while (true) {
-        auto pos = s.find(sep);
-        if (pos == s.npos) {
-            res.push_back(s);
-            return res;
-        }
-        res.push_back(s.substr(0, pos));
-        s = s.substr(pos + 1);
-    }
-}
-
 auto join(vector<int> const &v, string sep) {
     Expects(!v.empty());
     string res = to_string(v[0]);

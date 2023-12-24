@@ -37,7 +37,11 @@ struct point {
         }
         return *this;
     }
+
+    int64_t hash() const { return y * (1LL << 30LL) + x; }
 };
+
+bool operator<(point a, point b) { return a.hash() < b.hash(); }
 
 std::optional<point> step(point pos, char dir, point dim) {
     pos += dir;
