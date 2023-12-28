@@ -1,0 +1,28 @@
+(defun merge-with-most-common-neighbors (node-list)
+  (flet ((common-neighbours (node)
+	   (cons (car node) (length (intersection (cdar node-list) (cdr node)))))
+	 (neighbor-p (node)
+	   (member (caar node-list) (cdr node))))
+    (let* ((first (caar node-list))
+	   (neighbors (remove-if-not #'neighbor-p node-list))
+	   (target (caar (sort (mapcar #'common-neighbours neighbors) '> :key 'cdr)))
+	   (new-sym (intern (format nil "~a~a" first target))))
+      (format t "~%~a + ~a = ~a~%" first target new-sym)
+      (labels ((target-p (node) (equal (car node) target))
+	       (first-or-target (x) (or (equal x first) (equal x target)))
+	       (replace-first-and-target-as-neighbors (node)
+		 (cons (car node)
+		       (mapcar (lambda (x) (if (first-or-target x) new-sym x))
+						  (cdr node)))))
+	(let* ((target-neighbors (cdr (find-if #'target-p node-list))))
+	  (cons
+	   (cons new-sym (remove-if #'first-or-target (append (cdar node-list) target-neighbors)))
+	   (mapcar #'replace-first-and-target-as-neighbors (remove-if #'target-p (cdr node-list)))))))))
+
+
+
+(defun merge-until-3-neighbors (node-list)
+  (print node-list)
+  (if (<= (length (cdr (car node-list))) 3)
+      (cdar node-list)
+      (merge-until-3-neighbors (merge-with-most-common-neighbors node-list))))
