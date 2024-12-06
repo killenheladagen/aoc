@@ -12,13 +12,22 @@
   (and (>= (car pos) 0) (< (car pos) (board-width b))
        (>= (cdr pos) 0) (< (cdr pos) (board-height b))))
 
-(defun find-char (c b)
-  (let ((result))
-    (loop for y from 0 to (1- (board-height b)) do
-      (loop for x from 0 to (1- (board-width b)) do
-        (when (eq (aref b y x) c)
-          (push (cons x y) result))))
+(defun for-each-pos-on-board (f b)
+  (loop for y from 0 to (1- (board-height b)) do
+    (loop for x from 0 to (1- (board-width b)) do
+      (funcall f (cons x y) (char-at (cons x y) b)))))
+
+(defun find-char (needle b)
+  (let* ((result)
+         (store-if-eq (lambda (pos c) (when (eq c needle) (push pos result)))))
+    (for-each-pos-on-board store-if-eq b)
     result))
+
+(defun print-board (b)
+  (flet ((print-char (pos c)
+           (when (zerop (car pos)) (terpri))
+           (princ c)))
+    (for-each-pos-on-board #'print-char b)))
 
 (defun char-at (pos b)
   (when (inside-board pos b)
