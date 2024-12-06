@@ -39,6 +39,9 @@
 (defparameter *trace-bit-weights* ".╾╽┓╼━┏┳╿┛┃┫┗┻┣╋")
 (defparameter *dir-weights*       "_<v_>___^")
 
+(defun obstacle-p (c) (find c "#O"))
+(defun visited-p (c) (not (find c ".#O")))
+
 (defun trace-from-dir-char (c)
   (ecase c
     (#\^ #\╽)
@@ -61,35 +64,62 @@
   (turn-right (turn-right dir)))
 
 (defun mark-trace (dir pos b)
+  "Return T if a loop was detected."
   (let ((old-bits (position (char-at pos b) *trace-bit-weights*)))
     (when old-bits
       (let ((new-bits (logior old-bits (position dir *dir-weights*))))
-        (set-char-at (char *trace-bit-weights* new-bits) pos b)))))
+        (set-char-at (char *trace-bit-weights* new-bits) pos b)
+        (eq old-bits new-bits)))))
 
-(defun walk-until-char-ahead (stop-char pos dir b)
+(defun walk-until-obstacle (pos dir b)
+  "Return T if a loop was detected."
   (when (inside-board pos b)
     (let* ((pos-ahead (add-step dir pos))
            (char-ahead (char-at pos-ahead b)))
-      (if (eq char-ahead stop-char)
+      (if (obstacle-p char-ahead)
           pos
-          (progn (mark-trace dir pos b)
-                 (when (inside-board pos-ahead b)
-                   (mark-trace (opposite-dir dir) pos-ahead b)
-                   (walk-until-char-ahead stop-char pos-ahead dir b)))))))
+          (or (mark-trace dir pos b) ;; Stop if loop was detected
+              (when (inside-board pos-ahead b)
+                ;;(mark-trace (opposite-dir dir) pos-ahead b) ;; Would mess up loop detection
+                (walk-until-obstacle pos-ahead dir b)))))))
 
 (defun walk-until-off-board (pos dir b)
-  (when (setf pos (walk-until-char-ahead #\# pos dir b))
-    (setf dir (turn-right dir))
-    (walk-until-off-board pos dir b)))
+  "Return T if a loop was detected."
+  (or (eq pos t) ;; Stop if loop was detected
+      (when (setf pos (walk-until-obstacle pos dir b))
+        (setf dir (turn-right dir))
+        (walk-until-off-board pos dir b))))
 
-(defun distinct-visits (f)
+(defun find-start-and-walk-board (b)
+  "Return T if a loop was detected."
   (let* ((dir #\^)
-         (b (read-character-matrix-file f))
          (pos (car (find-char (lambda (c) (eq c dir)) b))))
     (set-char-at #\. pos b)
-    (walk-until-off-board pos dir b)
-    (when (< (board-width b) 30) (print-board b))
-    (length (find-char (lambda (c) (not (find c ".#"))) b))))
+    (let ((has-loop (walk-until-off-board pos dir b)))
+      (when (and has-loop (< (board-width b) 10)) (print-board b))
+      has-loop)))
 
-(assert (= (distinct-visits "test.txt") 41))
-(print (distinct-visits "input.txt"))
+(defun distinct-visits (f)
+  (let ((b (read-character-matrix-file f)))
+    (find-start-and-walk-board b)
+    (find-char #'visited-p b)))
+
+(defun count-distinct-visits (f)
+  (length (distinct-visits f)))
+
+(assert (= (count-distinct-visits "test.txt") 41))
+(print (count-distinct-visits "input.txt"))
+
+(defun obstruct-board (pos f)
+  (let ((b (read-character-matrix-file f)))
+    (when (eq (char-at pos b) #\.) (set-char-at #\O pos b))
+    b))
+
+(defun obstructions-that-loop (f)
+  (count-if #'identity
+            (mapcar (lambda (obst-pos)
+                      (find-start-and-walk-board (obstruct-board obst-pos f)))
+                    (distinct-visits f))))
+
+(assert (= (obstructions-that-loop "test.txt") 6))
+(print (obstructions-that-loop "input.txt"))
