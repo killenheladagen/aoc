@@ -1,3 +1,5 @@
+(require 'uiop)
+
 (defun read-character-matrix-file (f)
   (let* ((rows (mapcar (lambda (string) (coerce string 'list))
                        (uiop:read-file-lines f)))
@@ -11,6 +13,13 @@
 (defun inside-board (pos b)
   (and (>= (car pos) 0) (< (car pos) (board-width b))
        (>= (cdr pos) 0) (< (cdr pos) (board-height b))))
+
+(defun char-at (pos b)
+  (when (inside-board pos b)
+    (aref b (cdr pos) (car pos))))
+
+(defun set-char-at (c pos b)
+  (setf (aref b (cdr pos) (car pos)) c))
 
 (defun for-each-pos-on-board (f b)
   (loop for y from 0 to (1- (board-height b)) do
@@ -28,13 +37,6 @@
            (when (zerop (car pos)) (terpri))
            (princ (if (eq c #\.) #\· c))))
     (for-each-pos-on-board #'print-char b)))
-
-(defun char-at (pos b)
-  (when (inside-board pos b)
-    (aref b (cdr pos) (car pos))))
-
-(defun set-char-at (c pos b)
-  (setf (aref b (cdr pos) (car pos)) c))
 
 (defparameter *trace-bit-weights* ".╾╽┓╼━┏┳╿┛┃┫┗┻┣╋")
 (defparameter *dir-weights*       "_<v_>___^")
