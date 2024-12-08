@@ -19,10 +19,13 @@
 
 (defun board-width (b) (array-dimension b 1))
 (defun board-height (b) (array-dimension b 0))
+(defun board-dimensions (b) (complex (board-width b) (board-height b)))
 
-(defun inside-board (pos b)
-  (and (>= (realpart pos) 0) (< (realpart pos) (board-width b))
-       (>= (imagpart pos) 0) (< (imagpart pos) (board-height b))))
+(defun inside-board-dim (pos dim)
+  (and (>= (realpart pos) 0) (< (realpart pos) (realpart dim))
+       (>= (imagpart pos) 0) (< (imagpart pos) (imagpart dim))))
+
+(defun inside-board (pos b) (inside-board-dim pos (board-dimensions b)))
 
 (defun char-at (pos b)
   (when (inside-board pos b)
@@ -56,23 +59,24 @@
       (for-each-pos-on-board #'store-if-antenna b)
       antennas)))
 
-(defun antenna-antinodes (a b)
+(defun resonance-positions (a b dim)
   (let* ((d (- b a)))
-    (list (- a d) (+ b d))))
+    (remove-if-not (lambda (pos) (inside-board-dim pos dim)) (list (- a d) (+ b d)))))
 
-(defun antinode-map (f)
-  (let* ((b (read-character-matrix-file f))
+(defun antinode-map (antinode-func file)
+  (let* ((b (read-character-matrix-file file))
+         (dim (board-dimensions b))
          (antennas (antenna-table b))
          (draw-dash (lambda (pos) (when (inside-board pos b) (set-char-at #\# pos b)))))
     (loop for v being the hash-value of antennas do
-      (mapc draw-dash (map-pairs-con (lambda (a b) (antenna-antinodes a b)) v)))
+      (mapc draw-dash (map-pairs-con (lambda (a b) (funcall antinode-func a b dim)) v)))
     b))
 
-(defun antinode-positions (f)
-  (find-char (lambda (c) (eq c #\#)) (antinode-map f)))
+(defun antinode-positions (antinode-func file)
+  (find-char (lambda (c) (eq c #\#)) (antinode-map antinode-func file)))
 
-(defun count-unique-antinodes (f)
-  (length (antinode-positions f)))
+(defun count-unique-antinodes (antinode-func file)
+  (length (antinode-positions antinode-func file)))
 
-(assert (= (count-unique-antinodes "test.txt") 14))
-(print (count-unique-antinodes "input.txt"))
+(assert (= (count-unique-antinodes #'resonance-positions "test.txt") 14))
+(print (count-unique-antinodes #'resonance-positions "input.txt"))
