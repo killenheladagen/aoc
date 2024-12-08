@@ -80,3 +80,15 @@
 
 (assert (= (count-unique-antinodes #'resonance-positions "test.txt") 14))
 (print (count-unique-antinodes #'resonance-positions "input.txt"))
+
+(defun resonance-line (a b dim)
+  (let* ((delta (- b a))
+         (step (/ delta (gcd (realpart delta) (imagpart delta)))))
+    (labels ((steps-inside (p d)
+               (when (inside-board-dim p dim)
+                 (append (list p) (steps-inside (+ p d) d)))))
+      (append (steps-inside a step)
+              (steps-inside a (- step))))))
+
+(assert (= (count-unique-antinodes #'resonance-line "test.txt") 34))
+(print (count-unique-antinodes #'resonance-line "input.txt"))
