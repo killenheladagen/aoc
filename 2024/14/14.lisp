@@ -1,5 +1,16 @@
 (require 'cl-ppcre)
 (require 'uiop)
+(require 'asdf)
+;;(asdf:load-asd (merge-pathnames "zpng.asd" (uiop:getcwd)))
+;;(asdf:load-system "zpng")
+(push (merge-pathnames "zpng/" (uiop:getcwd)) asdf:*central-registry*)
+(require 'zpng)
+
+;;(require 'quicklisp)
+;;(pushnew (sb-posix:getcwd) quicklisp:*local-project-directories* :test #'equalp)
+;;(ql:quickload "zpng")
+;;(push  (sb-posix:getcwd) asdf:*central-registry*)
+;;(require 'zpng)
 
 (defun read-pos-and-velocity-file (f)
   (mapcar (lambda (row)
@@ -16,6 +27,8 @@
   (and (>= (realpart pos) 0) (< (realpart pos) (realpart dim))
        (>= (imagpart pos) 0) (< (imagpart pos) (imagpart dim))))
 
+(defun inside-board (pos b) (inside-board-dim pos (board-dimensions b)))
+
 (defun char-at (pos b)
   (when (inside-board pos b)
     (aref b (imagpart pos) (realpart pos))))
@@ -24,8 +37,6 @@
   (loop for y from 0 to (1- (board-height b)) do
     (loop for x from 0 to (1- (board-width b)) do
       (funcall f (complex x y) (char-at (complex x y) b)))))
-
-(defun inside-board (pos b) (inside-board-dim pos (board-dimensions b)))
 
 (defun make-empty-board (dim)
   (make-array (list (imagpart dim) (realpart dim)) :element-type 'character
@@ -55,17 +66,21 @@
     (mapc (lambda (pos) (set-char-at #\* pos b)) positions)
     (print-board b)))
 
-(defun predict-robot-positions (num-steps dim file &key print)
+(defun has-horizontal-line (positions)
+  (let ((spos (sort positions #'complex<)))
+    (remove-if-not (lambda (p)
+                     (equal p '(1 1 1)))
+                   (mapcar (lambda (x) (mapcar (lambda (x0 x1) (- x0 x1)) (cdr x) x))
+                           (mapcar (lambda (a b c d) (list a b c d)) spos (cdr spos) (cddr spos) (cdddr spos))))))
+
+(defun predict-robot-positions (num-steps dim file &key print-func)
   (flet ((move-robot (pos v) (complex-mod (+ pos v) dim)))
     (let* ((robots (read-pos-and-velocity-file file))
            (positions (mapcar #'car robots))
            (velocities (mapcar #'cdr robots)))
       (dotimes (i num-steps)
-        (when (and print (>= i 240))
-          (format t "~%Number of moves: ~a~%" i)
-          (print-robots positions)
-          ;;(read-line))
-          (sleep 0.5))
+        (when (has-horizontal-line (copy-list positions)) (format t "Line: ~a~%" i))
+        (when print-func (funcall print-func i positions))
         (setf positions (mapcar #'move-robot positions velocities)))
       positions)))
 
@@ -88,7 +103,66 @@
 (defun safety-factor (num-steps dim file)
   (reduce #'* (quadrant-counts dim (predict-robot-positions num-steps dim file))))
 
+(defun complex< (a b)
+  (or (< (imagpart a) (imagpart b))
+      (and (= (imagpart a) (imagpart b))
+           (< (realpart a) (realpart b)))))
+
 (assert (eq (safety-factor 100 #C(11 7) "test.txt") 12))
 (print (safety-factor 100 #C(101 103) "input.txt"))
 
-(predict-robot-positions 400 #C(101 103) "input.txt" :print t)
+;;(predict-robot-positions 400 #C(101 103) "input.txt" :print t)
+
+
+(import 'zpng:pixel-streamed-png)
+(import 'zpng:start-png)
+(import 'zpng:finish-png)
+(import 'zpng:write-pixel)
+(import 'zpng:data-array)
+(import 'zpng:write-png)
+
+(defun draw-grayscale-png (file dim func)
+  (let* ((png (make-instance 'zpng:png
+                             :color-type :grayscale
+                             :width (realpart dim)
+                             :height (imagpart dim))))
+    (funcall func (data-array png))
+    (write-png png file))
+  t)
+
+
+(defun draw-robot-positions (png-file max-png-dim start-steps input-dim input-file)
+  (let* ((period (+ input-dim #C(1 1)))
+         (n (complex (floor (1- (realpart max-png-dim)) (realpart period))
+                     (floor (1- (imagpart max-png-dim)) (imagpart period))))
+         (png-dim (complex (1- (* (realpart n) (realpart period)))
+                           (1- (* (imagpart n) (imagpart period)))))
+         (num-steps (+ start-steps (* (realpart n) (imagpart n)))))
+    (print period)
+    (flet ((draw-collage (image)
+             (labels ((draw-positions (i positions)
+                        (let ((ni (- i start-steps)))
+                          ;;(print ni)
+                          (when (>= ni 0)
+                            (multiple-value-bind (py px) (floor ni (realpart n))
+                              ;;(format t "~a,~a~%" px py)
+                              (let ((offs (complex (* px (realpart period))
+                                                   (* py (imagpart period))))
+                                    (a 0);;(if (oddp (+ ni py)) 0 255))
+                                    (b 255));;(if (oddp (+ ni py)) 0 255)))
+                                ;;(print (list offs input-dim))
+                                (loop for dy from 0 to (1- (imagpart input-dim)) do
+                                  (loop for dx from 0 to (1- (realpart input-dim)) do
+                                    (let ((x (+ dx (realpart offs)))
+                                          (y (+ dy (imagpart offs))))
+                                      (setf (aref image y x 0) a))))
+                                (mapc (lambda (pos)
+                                        (let ((p (+ pos offs)))
+                                          (setf (aref image (imagpart p) (realpart p) 0) b)))
+                                      positions)))))))
+               (predict-robot-positions num-steps input-dim input-file :print-func #'draw-positions))))
+      (draw-grayscale-png png-file png-dim #'draw-collage))))
+
+;;(draw-robot-positions "hej.png" #C(60 30) 100 #C(11 7) "test.txt")
+;;(dotimes (n 100)
+;;  (draw-robot-positions (format nil "pos-~a.png" n) #C(1900 1000) (* n 180) #C(101 103) "input.txt"))

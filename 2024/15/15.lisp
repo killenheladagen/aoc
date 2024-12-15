@@ -1,7 +1,19 @@
 (require 'uiop)
 
+(defparameter *wide-boxes* nil)
+
+(defun widen-row (row)
+  (mapcan (lambda (c)
+            (case c
+              (#\@ (list #\@ #\.))
+              (#\O (list #\[ #\]))
+              (otherwise (list c c))))
+          row))
+
 (defun read-character-matrix-file (f)
-  (let* ((rows (mapcar (lambda (string) (coerce string 'list))
+  (let* ((rows (mapcar (lambda (string)
+                         (let ((row (coerce string 'list)))
+                           (if *wide-boxes* (widen-row row) row)))
                        (uiop:read-file-lines f)))
          (num-cols (length (car rows))))
     (make-array (list (length rows) num-cols) :element-type 'character
@@ -61,29 +73,72 @@
            (princ (if (eq c #\.) #\· c))))
     (for-each-pos-on-board #'print-char b)))
 
-(defun move-and-push (pos dir b)
-  (let ((step (let* ((pos-ahead (+ pos dir))
-                     (c-ahead (char-at pos-ahead b)))
-                (cond ((eq c-ahead #\#) 0)
-                      ((eq c-ahead #\O) (move-and-push pos-ahead dir b))
-                      (t dir)))))
-    (unless (zerop step)
-      (set-char-at (char-at pos b) (+ pos step) b) ;; Move object (box or robot)
-      (set-char-at #\- pos b)) ;; Leave a trace
-    step))
+(defun move-char-at (pos step empty-char b)
+  (set-char-at (char-at pos b) (+ pos step) b)
+  (set-char-at empty-char pos b))
+
+(defun object-extend (c dir)
+  (let ((vertical (zerop (realpart dir))))
+    (case c
+      (#\O '(0))
+      (#\[ (if vertical '(0 1) '(0)))
+      (#\] (if vertical '(0 -1) '(0)))
+      (otherwise nil))))
+
+(defun object-positions (c pos dir)
+  (mapcar (lambda (d) (+ pos d)) (object-extend c dir)))
+
+(defun can-move-and-push (pos-list dir b)
+  (every (lambda (pos)
+           (let* ((pos-ahead (+ pos dir))
+                  (c-ahead (char-at pos-ahead b)))
+             (unless (eq c-ahead #\#) ;; Wall ahead
+               (can-move-and-push
+                (object-positions c-ahead pos-ahead dir)
+                dir b))))
+         pos-list))
+
+(defun move-and-push (pos-list dir b)
+  (mapc (lambda (pos)
+          (let* ((pos-ahead (+ pos dir))
+                 (c-ahead (char-at pos-ahead b)))
+            (assert (not (eq c-ahead #\#))) ;; Wall ahead
+            (move-and-push
+             (object-positions c-ahead pos-ahead dir)
+             dir b)
+            (move-char-at pos dir #\Space b)))
+        pos-list))
+
+(defun move-robot (pos dir b)
+  (if (can-move-and-push (list pos) dir b)
+      (progn (move-and-push (list pos) dir b)
+             dir)
+      0))
 
 (defun predict-robot-moves (file)
   (multiple-value-bind (b steps) (read-files file)
     (let ((pos (car (find-char-eq #\@ b))))
-      (mapc (lambda (dir) (incf pos (move-and-push pos dir b))) steps))
+      ;;(print-board b)
+      (mapc (lambda (dir)
+              (incf pos (move-robot pos dir b))
+              ;;(format t "~%~a" dir)
+              ;;(print-board b)
+              )
+            steps))
     b))
 
 (defun gps-coord (pos)
   (+ (* 100 (imagpart pos)) (realpart pos)))
 
 (defun sum-of-gps (file)
-  (reduce #'+ (mapcar #'gps-coord (find-char-eq #\O (predict-robot-moves file)))))
+  (let ((c (if *wide-boxes* #\[ #\O)))
+    (reduce #'+ (mapcar #'gps-coord (find-char-eq c (predict-robot-moves file))))))
 
 (assert (= (sum-of-gps "test-small") 2028))
 (assert (= (sum-of-gps "test") 10092))
+(print (sum-of-gps "input"))
+
+(setf *wide-boxes* t)
+(sum-of-gps "test-small-wide")
+(assert (= (sum-of-gps "test") 9021))
 (print (sum-of-gps "input"))
