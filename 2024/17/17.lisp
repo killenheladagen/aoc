@@ -115,12 +115,17 @@
 ;; 12: output B % 8
 ;; 14: jump to 0 unless A is 0
 
+(defun output-and-a (a)
+  (let* ((b (logxor (mod a 8) 3))
+         (c (ash a (- b))))
+    (setf a (ash a -3))
+    (values (mod (logxor b 4 c) 8) a)))
+
 (defun input-prog (a)
   (loop while (not (= a 0)) collect
-                            (let* ((b (logxor (mod a 8) 3))
-                                   (c (ash a (- b))))
-                              (setf a (ash a -3))
-                              (mod (logxor b 4 c) 8))))
+                            (multiple-value-bind (output new-a) (output-and-a a)
+                              (setf a new-a)
+                              output)))
 
 (compile 'input-prog)
 
