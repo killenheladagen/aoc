@@ -88,13 +88,18 @@
 ;;(print-program "0,3,5,4,3,0")
 ;;(print-program *input-data*)
 
+(defun test-output-and-a (a)
+  (setf a (ash a -3))
+  (values (mod a 8) a))
+
 (defun test-prog (a)
   ;; 0: A = A / 2^3
   ;; 2: output A % 8
   ;; 4: jump to 0 unless A is 0
   (loop while (not (= a 0)) collect
-                            (progn (setf a (ash a -3))
-                                   (mod a 8))))
+                            (multiple-value-bind (output new-a) (test-output-and-a a)
+                              (setf a new-a)
+                              output)))
 
 ;; (defun find-a-for-test-prog ()
 ;;   (let ((a 1)
@@ -105,6 +110,7 @@
 ;;                                    (mod a 8))))
 
 ;;(print (test-prog 117440))
+(assert (equal (test-prog 117440) '(0 3 5 4 3 0)))
 
 ;; 0: B = A % 8
 ;; 2: B = B xor 3
@@ -130,6 +136,7 @@
 (compile 'input-prog)
 
 (assert (equal (input-prog 50230824) '(2 1 4 7 6 0 3 1 4)))
-(print (input-prog 50230824))
 
 ;;(print (find-identity-input *input-data*))
+
+;;(defun find-identity-hard ()
