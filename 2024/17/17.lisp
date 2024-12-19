@@ -120,8 +120,7 @@
                             (let* ((b (logxor (mod a 8) 3))
                                    (c (ash a (- b))))
                               (setf a (ash a -3))
-                              (setf b (logxor b 4 c))
-                              (mod b 8))))
+                              (mod (logxor b 4 c) 8))))
 
 (compile 'input-prog)
 
