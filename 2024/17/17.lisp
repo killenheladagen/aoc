@@ -113,6 +113,10 @@
 ;;(print (test-prog 117440))
 (assert (equal (test-prog 117440) '(0 3 5 4 3 0)))
 
+(defun output (a) (mod (logxor (logxor (mod a 8) 3) 4 (ash a (- (logxor (mod a 8) 3)))) 8))
+
+(defun a+1 (a) (ash a -3))
+
 (defun output-and-a (a)
   ;; B = A % 8
   ;; B = B xor 3
@@ -121,7 +125,7 @@
   ;; B = B xor 4
   ;; B = B xor C
   ;; output B % 8
-  (values (mod (logxor (logxor (mod a 8) 3) 4 (ash a (- (logxor (mod a 8) 3)))) 8) (ash a -3)))
+  (values (output a) (a+1 a)))
 
 (defun list-to-int (list)
   (parse-integer (format nil "~{~a~}" list)))
