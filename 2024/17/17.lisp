@@ -116,13 +116,12 @@
 ;; 14: jump to 0 unless A is 0
 
 (defun input-prog (a)
-  (let ((b 0))
-    (loop while (not (= a 0)) collect
-                              (progn (setf b (logxor (mod a 8) 3))
-                                     (let ((c (ash a (- b))))
-                                       (setf a (ash a -3))
-                                       (setf b (logxor b 4 c)))
-                                     (mod b 8)))))
+  (loop while (not (= a 0)) collect
+                            (let ((b (logxor (mod a 8) 3)))
+                              (let ((c (ash a (- b))))
+                                (setf a (ash a -3))
+                                (setf b (logxor b 4 c)))
+                              (mod b 8))))
 
 (compile 'input-prog)
 
