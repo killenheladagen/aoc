@@ -117,10 +117,10 @@
 
 (defun input-prog (a)
   (loop while (not (= a 0)) collect
-                            (let ((b (logxor (mod a 8) 3)))
-                              (let ((c (ash a (- b))))
-                                (setf a (ash a -3))
-                                (setf b (logxor b 4 c)))
+                            (let* ((b (logxor (mod a 8) 3))
+                                   (c (ash a (- b))))
+                              (setf a (ash a -3))
+                              (setf b (logxor b 4 c))
                               (mod b 8))))
 
 (compile 'input-prog)
