@@ -117,6 +117,8 @@
 
 (defun a+1 (a) (ash a -3))
 
+(defun inv-a+1 (a) (ash a 3))
+
 (defun output-and-a (a)
   ;; B = A % 8
   ;; B = B xor 3
@@ -126,6 +128,18 @@
   ;; B = B xor C
   ;; output B % 8
   (values (output a) (a+1 a)))
+
+(defun min-solution (prg &optional (a 0))
+  (let* ((target-output (car (last prg))))
+    (loop while (not (= (output a) target-output)) do
+      (incf a))
+    (if (= (length prg) 1)
+        a
+        (min-solution (subseq prg 0 (1- (length prg))) (inv-a+1 a)))))
+
+(let ((a (min-solution *input-prog*)))
+  (print a)
+  (assert (equal (input-prog a) *input-prog*)))
 
 (defun list-to-int (list)
   (parse-integer (format nil "~{~a~}" list)))
