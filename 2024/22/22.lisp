@@ -42,4 +42,58 @@
                   (read-integer-list-file filename))))
 
 (assert (= (sum-of-nth-secrets 2000 "test.txt") 37327623))
-(assert (= (print (sum-of-nth-secrets 2000 "input.txt")) 14119253575))
+;;(assert (= (print (sum-of-nth-secrets 2000 "input.txt")) 14119253575))
+
+(defun ones-digit (x)
+  (mod x 10))
+
+(defun ones-digit-of-secrets (seed)
+  (mapcar #'ones-digit (secret-sequence 2000 seed)))
+
+(defun encode-price-and-sequence (x)
+  (cons (car x) (+ (* (+ 10 (nth 1 x)) 1)
+                   (* (+ 10 (nth 2 x)) 100)
+                   (* (+ 10 (nth 3 x)) 10000)
+                   (* (+ 10 (nth 4 x)) 1000000))))
+
+(defun decode-price-and-sequence (x)
+  (let ((y (cdr x)))
+    (list (car x)
+          (- (mod y 100) 10)
+          (- (floor (mod y 10000) 100) 10)
+          (- (floor (mod y 1000000) 10000) 10)
+          (- (floor (mod y 100000000) 1000000) 10))))
+
+(defun refine-price-list (digits)
+  (let ((changes (mapcar #'- (cdr digits) digits)))
+    (mapcar #'encode-price-and-sequence
+            (mapcar #'list (cddddr digits) changes (cdr changes) (cddr changes) (cdddr changes)))))
+
+(defun prune-price-list (refined-list)
+  (flet ((first-seq-match (seq)
+           (find-if (lambda (x) (= (cdr x) seq)) refined-list))
+         (zero-price (price-and-seq)
+           (zerop (car price-and-seq))))
+    (let* ((unique-sequences (remove-duplicates (mapcar #'cdr refined-list))))
+      (sort
+       (remove-if #'zero-price (mapcar #'first-seq-match unique-sequences))
+       (lambda (a b) (< (cdr a) (cdr b)))))))
+
+(defun max-price (refined-lists)
+  (let* ((combined-lists (mapcan #'identity refined-lists))
+         (unique-sequences (remove-duplicates (mapcar #'cdr combined-lists))))
+    (reduce #'max
+            (mapcar (lambda (x)
+                      (reduce #'+ (mapcar #'car (remove-if-not (lambda (y) (= x (cdr y)))
+                                                               combined-lists))))
+                    unique-sequences))))
+
+(defun most-num-bananas (filename)
+  (let ((prices (mapcar #'prune-price-list
+                        (mapcar #'refine-price-list
+                                (mapcar #'ones-digit-of-secrets
+                                        (read-integer-list-file filename))))))
+    (max-price prices)))
+
+(assert (= (most-num-bananas "test2.txt") 23))
+(print (most-num-bananas "input.txt"))
