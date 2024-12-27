@@ -1,3 +1,5 @@
+(require 'uiop)
+
 (defun next-secret (x)
   (let ((secret x))
     (labels ((mix-and-prune (a)
