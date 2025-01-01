@@ -61,17 +61,26 @@
                      (max (imagpart a) (imagpart b))))
           numbers))
 
+(defun complex< (a b)
+  (or (< (imagpart a) (imagpart b))
+      (and (= (imagpart a) (imagpart b))
+           (< (realpart a) (realpart b)))))
+
 (defun print-robots (positions)
   (let ((b (make-empty-board (+ #C(1 1) (complex-max positions)))))
     (mapc (lambda (pos) (set-char-at #\* pos b)) positions)
     (print-board b)))
 
 (defun has-horizontal-line (positions)
-  (let ((spos (sort positions #'complex<)))
-    (remove-if-not (lambda (p)
-                     (equal p '(1 1 1)))
-                   (mapcar (lambda (x) (mapcar (lambda (x0 x1) (- x0 x1)) (cdr x) x))
-                           (mapcar (lambda (a b c d) (list a b c d)) spos (cdr spos) (cddr spos) (cdddr spos))))))
+  (let* ((spos (sort (copy-list positions) #'complex<))
+         (line-length 0)
+         (has-line nil))
+    (mapc (lambda (a b)
+            (if (= (- b a) 1)
+                (when (> (incf line-length) 10) (setf has-line t))
+                (setf line-length 0)))
+          spos (cdr spos))
+    has-line))
 
 (defun predict-robot-positions (num-steps dim file &key print-func)
   (flet ((move-robot (pos v) (complex-mod (+ pos v) dim)))
@@ -79,7 +88,7 @@
            (positions (mapcar #'car robots))
            (velocities (mapcar #'cdr robots)))
       (dotimes (i num-steps)
-        (when (has-horizontal-line (copy-list positions)) (format t "Line: ~a~%" i))
+        (when (has-horizontal-line (copy-list positions)) (format t "Step ~a~%" i))
         (when print-func (funcall print-func i positions))
         (setf positions (mapcar #'move-robot positions velocities)))
       positions)))
@@ -103,15 +112,10 @@
 (defun safety-factor (num-steps dim file)
   (reduce #'* (quadrant-counts dim (predict-robot-positions num-steps dim file))))
 
-(defun complex< (a b)
-  (or (< (imagpart a) (imagpart b))
-      (and (= (imagpart a) (imagpart b))
-           (< (realpart a) (realpart b)))))
-
 (assert (eq (safety-factor 100 #C(11 7) "test.txt") 12))
 (print (safety-factor 100 #C(101 103) "input.txt"))
 
-;;(predict-robot-positions 400 #C(101 103) "input.txt" :print t)
+(predict-robot-positions 40000 #C(101 103) "input.txt")
 
 
 (import 'zpng:pixel-streamed-png)
