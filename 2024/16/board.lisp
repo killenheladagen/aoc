@@ -19,6 +19,8 @@
 
 (defun inside-board (pos b) (inside-board-dim pos (board-dimensions b)))
 
+(defun outside-board (pos b) (not (inside-board pos b)))
+
 (defun at (pos b)
   (when (inside-board pos b)
     (aref b (imagpart pos) (realpart pos))))
