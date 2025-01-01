@@ -7,21 +7,31 @@
 
 using namespace std;
 
-static int number_of_possible_designs(string const &design,
-                                      map<char, vector<string>> const &towels,
-                                      bool stop_after_first) {
+static int64_t
+number_of_possible_designs(string const &design,
+                           map<char, vector<string>> const &towels,
+                           bool stop_after_first, map<string, int64_t> &cache) {
     if (design.size() == 0)
         return 1;
+
+    auto cache_it = cache.find(design);
+    if (cache_it != cache.end())
+        return cache_it->second;
+
     auto it = towels.find(design[0]);
-    auto num = 0;
+    int64_t num = 0;
     if (it != towels.end())
         for (auto &towel : it->second)
             if (design.starts_with(towel)) {
-                num += number_of_possible_designs(design.substr(towel.size()),
-                                                  towels, stop_after_first);
+                num +=
+                    number_of_possible_designs(design.substr(towel.size()),
+                                               towels, stop_after_first, cache);
                 if (num && stop_after_first)
                     return 1;
             }
+
+    cache[design] = num;
+
     return num;
 }
 
@@ -39,7 +49,8 @@ auto prune(vector<string> towels) {
         auto all_but_candidate = towels;
         all_but_candidate[i] = "QQQ";
         auto towel_map = build_towel_map(all_but_candidate);
-        if (number_of_possible_designs(towels[i], towel_map, true) == 0)
+        map<string, int64_t> cache;
+        if (number_of_possible_designs(towels[i], towel_map, true, cache) == 0)
             keep.push_back(towels[i]);
     }
     cerr << "After prune: " << keep.size() << "\n";
@@ -71,21 +82,24 @@ static auto read_csv_and_rows(const char *filename, bool do_prune = true) {
 }
 
 static auto possible_designs(const char *filename) {
+    map<string, int64_t> cache;
     vector<string> possible;
     auto const [towels, designs] = read_csv_and_rows(filename);
     copy_if(designs.begin(), designs.end(), back_inserter(possible),
-            [&towels](string const &x) {
-                return number_of_possible_designs(x.c_str(), towels, true) != 0;
+            [&towels, &cache](string const &x) {
+                return number_of_possible_designs(x.c_str(), towels, true,
+                                                  cache) != 0;
             });
     return possible;
 }
 
 static auto number_of_different_ways(vector<string> const &designs,
                                      const char *filename) {
+    map<string, int64_t> cache;
     auto const towels = get<0>(read_csv_and_rows(filename, false));
-    auto num = 0;
+    int64_t num = 0;
     for (auto &design : designs)
-        num += number_of_possible_designs(design, towels, false);
+        num += number_of_possible_designs(design, towels, false, cache);
     return num;
 }
 
