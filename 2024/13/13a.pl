@@ -16,6 +16,7 @@ sub fewest_tokens($ax,$ay,$bx,$by,$px,$py) {
         next if ($nbx != $nby);
         next unless isint $nbx;
         my $cost = 3*$na+$nbx;
+        print "$na $nbx: $ax * $na + $bx * $nbx = $px   $ay * $na + $by * $nby = $py\n";
         $cheapest = $cost if $cost < $cheapest;
     }
     return ($cheapest == 999999) ? 0 : $cheapest;
@@ -47,3 +48,7 @@ my $x = fewest_tokens_for_file("test.txt");
 printf("%d\n", $x);
 die if ($x != 480);
 printf("%d\n", fewest_tokens_for_file("input.txt"));
+
+__DATA__
+
+480

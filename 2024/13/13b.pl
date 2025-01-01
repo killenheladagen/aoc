@@ -48,4 +48,4 @@ sub fewest_tokens_for_file($file) {
 my $x = fewest_tokens_for_file("test.txt");
 printf("%d\n", $x);
 #die if ($x != 480);
-printf("%d\n", fewest_tokens_for_file("input.txt"));
+#printf("%d\n", fewest_tokens_for_file("input.txt"));
