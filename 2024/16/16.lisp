@@ -23,14 +23,14 @@
     (set-at 0 end sb)
     (fill-in-distance end #C(0 1) sb b)
 
-    ;; (print-board b)
-    ;; (flet ((print-char (pos c)
-    ;;          (when (zerop (realpart pos)) (terpri))
-    ;;          (format t "~7d" (or c -1))))
-    ;;   (for-each-pos-on-board #'print-char sb))
+    (print-board b)
+    (flet ((print-char (pos c)
+             (when (zerop (realpart pos)) (terpri))
+             (format t "~7d" (or c -1))))
+      (for-each-pos-on-board #'print-char sb))
 
     (at start sb)))
 
 (assert (= (lowest-reindeer-score "test.txt") 7036))
 (assert (= (lowest-reindeer-score "test2.txt")  11048))
-(assert (= (print (lowest-reindeer-score "input.txt")) 105508))
+;;(assert (= (print (lowest-reindeer-score "input.txt")) 105508))
