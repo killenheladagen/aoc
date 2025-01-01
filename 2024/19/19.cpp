@@ -7,43 +7,23 @@
 
 using namespace std;
 
-#if 1
-static bool build_design(string const &design,
-                         map<char, vector<string>> const &towels) {
+static int number_of_possible_designs(string const &design,
+                                      map<char, vector<string>> const &towels,
+                                      bool stop_after_first) {
     if (design.size() == 0)
-        return true;
+        return 1;
     auto it = towels.find(design[0]);
+    auto num = 0;
     if (it != towels.end())
         for (auto &towel : it->second)
-            if (design.starts_with(towel) &&
-                build_design(design.substr(towel.size()), towels))
-                return true;
-    return false;
+            if (design.starts_with(towel)) {
+                num += number_of_possible_designs(design.substr(towel.size()),
+                                                  towels, stop_after_first);
+                if (num && stop_after_first)
+                    return 1;
+            }
+    return num;
 }
-#else
-static bool build_design(string design,
-                         map<char, vector<string>> const &towels) {
-    stack<string> back_track;
-
-    while (true) {
-
-        auto it = towels.find(design[0]);
-        if (it == towels.end()) {
-            if (back_track.empty())
-                return false;
-            design = back_track.top();
-            back_track.pop();
-        } else {
-            auto x =
-                find_if(it->second.begin(), it->second.end(),
-                        [&](auto &towel) { return design.starts_with(towel); });
-
-                build_design(design.substr(towel.size()), towels))
-                return true;
-                return false;
-        }
-    }
-#endif
 
 auto build_towel_map(vector<string> const &row) {
     map<char, vector<string>> towels;
@@ -59,7 +39,7 @@ auto prune(vector<string> towels) {
         auto all_but_candidate = towels;
         all_but_candidate[i] = "QQQ";
         auto towel_map = build_towel_map(all_but_candidate);
-        if (!build_design(towels[i], towel_map))
+        if (number_of_possible_designs(towels[i], towel_map, true) == 0)
             keep.push_back(towels[i]);
     }
     cerr << "After prune: " << keep.size() << "\n";
@@ -74,12 +54,13 @@ auto split(const string &str, const string &regex_str) {
     return list;
 }
 
-static auto read_csv_and_rows(const char *filename) {
+static auto read_csv_and_rows(const char *filename, bool do_prune = true) {
     string row;
     auto f = ifstream(filename);
 
     getline(f, row);
-    auto towels = build_towel_map(prune(split(row, ", ")));
+    auto towels_raw = split(row, ", ");
+    auto towels = build_towel_map(do_prune ? prune(towels_raw) : towels_raw);
     getline(f, row);
     assert(row == "");
 
@@ -89,17 +70,36 @@ static auto read_csv_and_rows(const char *filename) {
     return make_tuple(towels, designs);
 }
 
-static auto num_possible_designs(const char *filename) {
-    auto [towels, designs] = read_csv_and_rows(filename);
-    return count_if(designs.begin(), designs.end(), [&towels](string const &x) {
-        cerr << "test " << x << "\n";
-        return build_design(x.c_str(), towels);
-    });
+static auto possible_designs(const char *filename) {
+    vector<string> possible;
+    auto const [towels, designs] = read_csv_and_rows(filename);
+    copy_if(designs.begin(), designs.end(), back_inserter(possible),
+            [&towels](string const &x) {
+                return number_of_possible_designs(x.c_str(), towels, true) != 0;
+            });
+    return possible;
+}
+
+static auto number_of_different_ways(vector<string> const &designs,
+                                     const char *filename) {
+    auto const towels = get<0>(read_csv_and_rows(filename, false));
+    auto num = 0;
+    for (auto &design : designs)
+        num += number_of_possible_designs(design, towels, false);
+    return num;
 }
 
 int main() {
-    assert(num_possible_designs("test.txt") == 6);
-    // cerr << num_possible_designs("fake.txt") << "\n";
-    cerr << num_possible_designs("input.txt") << "\n";
+    auto possible = possible_designs("test.txt");
+    assert(possible.size() == 6);
+    auto num_diff = number_of_different_ways(possible, "test.txt");
+    assert(num_diff == 16);
+
+    possible = possible_designs("input.txt");
+    cerr << possible.size() << "\n";
+    assert(possible.size() == 306);
+    num_diff = number_of_different_ways(possible, "input.txt");
+    cerr << num_diff << "\n";
+
     return 0;
 }
