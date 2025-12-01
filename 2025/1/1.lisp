@@ -12,11 +12,8 @@
       (cons start (mapcar #'f ops)))))
 
 (defun num-stops-at-zero (start file &optional (transform #'identity))
-  (length (remove-if-not
-           #'zerop
-           (apply-rotation start
-                           (funcall transform
-                                    (read-rotation-file file))))))
+  (let ((lst (apply-rotation start (funcall transform (read-rotation-file file)))))
+    (length (remove-if-not #'zerop lst))))
 
 (defun sign (x)
   (cond ((> x 0) 1)
@@ -24,9 +21,7 @@
         (t 0)))
 
 (defun expand-rotations (ops)
-  (mapcan (lambda (x)
-            (make-list (abs x) :initial-element (sign x)))
-          ops))
+  (mapcan (lambda (x) (make-list (abs x) :initial-element (sign x))) ops))
 
 (defun num-passes-through-zero (start file)
   (num-stops-at-zero start file #'expand-rotations))
