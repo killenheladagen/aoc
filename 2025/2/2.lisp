@@ -1,3 +1,4 @@
+(load "../aoc")
 (require 'cl-ppcre)
 (require 'uiop)
 
@@ -44,13 +45,5 @@
                         (f (1- num-parts))))))
       (f (length id-str)))))
 
-(defun part-one (file) (sum-of-ids #'equal-halves-p file))
-(defun part-two (file) (sum-of-ids #'only-repetition-p file))
-
-(defun run-parts (test-result-one test-result-two)
-  (assert (= (part-one "test.txt") test-result-one))
-  (print (part-one "input.txt"))
-  (assert (= (part-two "test.txt") test-result-two))
-  (print (part-two "input.txt")))
-
-(run-parts 1227775554 4174379265)
+(aoc (lambda (file) (sum-of-ids #'equal-halves-p file)) 1227775554
+     (lambda (file) (sum-of-ids #'only-repetition-p file)) 4174379265)

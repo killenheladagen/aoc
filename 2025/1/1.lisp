@@ -1,3 +1,4 @@
+(load "../aoc")
 (require 'uiop)
 
 (defun read-rotation-file (file)
@@ -23,10 +24,5 @@
 (defun expand-rotations (ops)
   (mapcan (lambda (x) (make-list (abs x) :initial-element (sign x))) ops))
 
-(defun num-passes-through-zero (start file)
-  (num-stops-at-zero start file #'expand-rotations))
-
-(assert (= (num-stops-at-zero 50 "test.txt") 3))
-(print (num-stops-at-zero 50 "input.txt"))
-(assert (= (num-passes-through-zero 50 "test.txt") 6))
-(print (num-passes-through-zero 50 "input.txt"))
+(aoc (lambda (file) (num-stops-at-zero 50 file)) 3
+     (lambda (file) (num-stops-at-zero 50 file #'expand-rotations)) 6)
