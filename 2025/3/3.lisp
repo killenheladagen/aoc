@@ -16,15 +16,18 @@
         x
         (largest-digit-in-list digits min-items-left (1- le)))))
 
-(defun largest-pair (digits)
-  (print digits)
-  (let* ((a (largest-digit-in-list digits 1))
-         (b (largest-digit-in-list (cdr a) 0)))
-    (print (+ (* 10 (car a)) (car b)))))
+(defun largest-jolt-list (digits jolt-len)
+  (when (> jolt-len 0)
+    (let* ((a (largest-digit-in-list digits (1- jolt-len))))
+      (cons (car a) (largest-jolt-list (cdr a) (1- jolt-len))))))
 
-(defun sum-of-max-joltage (file)
+(defun largest-jolt (digits jolt-len)
+  (parse-integer (format nil "~{~a~}" (largest-jolt-list digits jolt-len))))
+
+(defun sum-of-max-joltage (file jolt-len)
   (reduce #'+
-          (mapcar #'largest-pair
+          (mapcar (lambda (digits) (largest-jolt digits jolt-len))
                   (read-digit-file file))))
 
-(aoc (lambda (file) (sum-of-max-joltage file)) 357)
+(aoc (lambda (file) (sum-of-max-joltage file 2)) 357
+     (lambda (file) (sum-of-max-joltage file 12)) 3121910778619)
