@@ -1,0 +1,8 @@
+12b garden
+13b claw
+16b maze spectators
+20b cheats
+21a keypad
+21b ?
+24b adder
+25b ?
