@@ -8,9 +8,7 @@
 
 (defun read-problem-file (file)
   (flet ((parse (x)
-           (cond ((string= x "+") #'+)
-                 ((string= x "*") #'*)
-                 (t (parse-integer x)))))
+           (or (parse-integer x :junk-allowed t) (intern x))))
     (let ((problems))
       (mapcar (lambda (line)
                 (let* ((raw (remove-if (lambda (x) (string= x "")) (cl-ppcre:split " " line)))
