@@ -1,0 +1,18 @@
+(load "../aoc")
+(require 'uiop)
+
+(defun count-splitters-used (file)
+  (let* ((lines (uiop:read-file-lines file))
+         (beams (list (position #\S (car lines) :test #'equal)))
+         (num-splits 0))
+    (flet ((trace-beams (line)
+             (flet ((split-and-count (pos)
+                      (if (equal (char line pos) #\^)
+                          (progn (incf num-splits)
+                                 (list (1- pos) (1+ pos)))
+                          (list pos))))
+               (setf beams (remove-duplicates (mapcan #'split-and-count beams))))))
+      (mapc #'trace-beams (cdr lines)))
+    num-splits))
+
+(aoc (lambda (file) (count-splitters-used file)) 21)
